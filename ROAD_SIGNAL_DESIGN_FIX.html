@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101722">
+<title>ROAD SIGNAL — голосовые оповещения</title>
+<style>
+:root{color-scheme:dark;--bg:#0b111a;--panel:#151f2d;--panel2:#1c293a;--line:#2b3a4e;--text:#f4f7fb;--muted:#9eacbd;--yellow:#ffc247;--green:#20b77a;--red:#e34d58;--blue:#3989e8}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{min-height:100dvh}button,input{font:inherit}button{border:0;cursor:pointer;color:white;font-weight:800;touch-action:manipulation}
+.app{width:100%;min-height:100dvh;max-width:none;margin:0;padding:calc(16px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-size:clamp(22px,6vw,30px);font-weight:950;letter-spacing:1.5px}.brand span{color:var(--yellow)}.status{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:8px 11px;border-radius:999px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 10px 30px #0003}
+h1,h2,p{margin:0}h1{font-size:clamp(27px,7vw,42px);line-height:1.05}h2{font-size:20px}.muted{color:var(--muted);line-height:1.5}.center{text-align:center}.warning{border:1px solid #8b6425;background:linear-gradient(145deg,#3b2d17,#211d19);padding:24px 18px;border-radius:22px;text-align:center}.warning .symbol{font-size:42px}.warning h1{color:var(--yellow);margin:8px 0}.warning p{color:#f0dfbd;line-height:1.5}
+.primary,.secondary,.danger{min-height:54px;border-radius:15px;padding:14px 18px;width:100%;font-size:16px}.primary{background:var(--yellow);color:#241b0c}.secondary{background:var(--panel2);border:1px solid var(--line)}.danger{background:#702a32}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:8px;margin:12px 0}.field label{font-weight:750;font-size:14px}.field input{width:100%;min-height:54px;background:#0c1420;color:white;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:18px;outline:none}.field input:focus{border-color:var(--yellow)}
+.hidden{display:none!important}.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.role-card{background:var(--panel2);border:1px solid var(--line);border-radius:18px;padding:20px 12px;min-height:130px;text-align:center}.role-card b{display:block;font-size:18px;margin:8px 0}.role-card small{color:var(--muted);font-weight:500}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cmd{min-height:88px;border-radius:17px;padding:13px 10px;background:#214b78;font-size:clamp(15px,4vw,18px);line-height:1.2;box-shadow:inset 0 -4px #0002}.cmd:active,.primary:active,.secondary:active{transform:scale(.98)}.cmd.green{background:#176b4d}.cmd.amber{background:#86601c}.cmd.red{background:#8a3038}.cmd.wide{grid-column:1/-1;min-height:72px}
+.subgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.subgrid button{min-height:58px;border-radius:14px;background:#28384d;font-size:16px}.subgrid .g{background:#176b4d}.subgrid .y{background:#86601c}.subgrid .r{background:#8a3038}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:8px}.pill{font-size:12px;color:#b8c7d8;background:#253448;padding:7px 10px;border-radius:999px}.code{font-size:clamp(25px,8vw,36px);font-weight:950;letter-spacing:5px;color:var(--yellow);text-align:center;padding:10px}
+.log{max-height:160px;overflow:auto;display:flex;flex-direction:column;gap:8px}.logitem{background:#0d1622;padding:10px 12px;border-radius:12px;font-size:14px;color:#d9e2ed}.toast{position:fixed;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));max-width:720px;margin:auto;background:#26374c;border:1px solid #52647a;border-radius:14px;padding:13px 15px;z-index:5;box-shadow:0 8px 30px #0008}
+footer{margin-top:auto;text-align:center;color:#78899d;font-size:11px;line-height:1.5;padding-top:8px}
+#welcome{min-height:calc(100dvh - 36px);display:flex;flex-direction:column;justify-content:center}
+#fullscreenBtn{min-height:54px}
+:fullscreen{background:var(--bg)}
+:fullscreen .app{min-height:100dvh;width:100vw}
+#introOverlay,#alertOverlay,#rotateOverlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:clamp(16px,4vw,48px);background:radial-gradient(ellipse at 50% 20%,#26364b 0%,#101722 58%,#080d14 100%)}
+#introOverlay .warning{width:min(900px,100%);min-height:min(82dvh,700px);display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid #9b742f;background:linear-gradient(145deg,#493516,#1a1e27 72%);box-shadow:0 24px 90px #0009;padding:clamp(24px,6vw,64px);border-radius:30px}
+#introOverlay .symbol{font-size:clamp(54px,10vw,100px)}
+#introOverlay h1{font-size:clamp(44px,9vw,88px);letter-spacing:.04em}
+#introOverlay p{font-size:clamp(16px,2.4vw,24px);max-width:760px}
+#introOverlay .primary{max-width:460px;min-height:66px;margin-top:clamp(20px,5vh,42px);font-size:clamp(16px,2vw,21px)}
+#alertOverlay{z-index:30;background:radial-gradient(ellipse at 50% 30%,#7d2028 0%,#2a1018 48%,#08090d 100%);text-align:center}
+#alertOverlay .alertCard{width:min(1100px,100%);min-height:72dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(16px,3vh,30px);padding:clamp(24px,5vw,60px);border:2px solid #ff737b;border-radius:32px;background:linear-gradient(145deg,#541d27dd,#17131beF);box-shadow:0 20px 90px #000a}
+#alertOverlay .alertKicker{font-weight:950;letter-spacing:.2em;color:#ffb3b8;font-size:clamp(15px,2vw,22px)}
+#alertOverlay h1{font-size:clamp(48px,10vw,112px);line-height:1;color:#fff;text-shadow:0 5px 30px #ff3d4d66}
+#alertOverlay p{font-size:clamp(24px,5vw,54px);font-weight:850;line-height:1.15;max-width:900px}
+#alertOverlay .alertHint{font-size:clamp(13px,1.7vw,18px);font-weight:500;color:#ffd5d7}
+#rotateOverlay{z-index:40;background:#090f18;text-align:center}
+#rotateOverlay .rotateCard{max-width:420px}
+#rotateOverlay .rotateIcon{font-size:76px;display:block;margin-bottom:18px}
+#rotateOverlay h2{font-size:28px;margin-bottom:10px}
+@media (orientation:portrait) and (max-width:800px){
+  #rotateOverlay{display:flex}
+  body.intro-open #rotateOverlay{display:none}
+}
+@media (orientation:landscape){
+  .app{max-width:none;padding:12px 20px;gap:10px}
+  header{min-height:36px}
+  #controller .panel{padding:14px}
+  #controller .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+  #controller .field[style*="grid-column:1/-1"]{grid-column:span 2!important}
+  #controller .panel[style*="grid-column:1/-1"]{grid-column:span 3!important}
+  .cmd{min-height:68px}
+  #receiver{display:grid;grid-template-columns:minmax(0,2fr) minmax(220px,1fr);gap:12px}
+  #receiver .panel{min-height:calc(100dvh - 110px)}
+  #receiver .log{max-height:calc(100dvh - 190px)}
+}
+@media(min-width:600px){.grid{gap:12px}.cmd{min-height:100px}}
+@media (orientation:landscape) and (min-width:600px){.cmd{min-height:74px}}
+</style>
+</head>
+<body>
+<div id="introOverlay">
+  <div class="warning">
+    <div class="symbol">⚠️</div>
+    <h1>ВНИМАНИЕ!</h1>
+    <p style="margin-top:18px">ROAD SIGNAL — система дополнительных голосовых оповещений между двумя телефонами.</p>
+    <p style="margin-top:14px"><b>Пультом нельзя пользоваться во время движения.</b> Настройка и проверка — только на стоянке. Сигналы не заменяют дорожные знаки, навигацию и внимание водителя.</p>
+    <button class="primary" id="startBtn">ПОНЯТНО, ПРОДОЛЖИТЬ</button>
+  </div>
+</div>
+<div id="alertOverlay" class="hidden" aria-live="assertive">
+  <div class="alertCard">
+    <div class="alertKicker">ROAD SIGNAL • СООБЩЕНИЕ</div>
+    <h1>ВНИМАНИЕ!</h1>
+    <p id="alertText">Ожидание сообщения</p>
+    <div class="alertHint">Ожидается команда «Очистить» с пульта</div>
+  </div>
+</div>
+<div id="rotateOverlay" class="hidden">
+  <div class="rotateCard">
+    <span class="rotateIcon">📱 ↻</span>
+    <h2>Поверните телефон</h2>
+    <p class="muted">ROAD SIGNAL рассчитан на горизонтальную ориентацию экрана.</p>
+  </div>
+</div>
+<main class="app">
+<header><div class="brand">ROAD <span>SIGNAL</span></div><div class="status" id="connection">НЕ ПОДКЛЮЧЕНО</div></header>
+
+
+
+<section id="choose" class="panel hidden">
+  <h2 class="center">Выберите режим</h2>
+  <p class="muted center" style="margin:8px 0 16px">Один телефон — пульт, второй — голосовой приёмник.</p>
+  <div class="role-grid">
+    <button class="role-card" id="controllerChoice"><span style="font-size:30px">🎛️</span><b>ПУЛЬТ</b><small>Отправлять команды</small></button>
+    <button class="role-card" id="receiverChoice"><span style="font-size:30px">🔊</span><b>ПРИЁМНИК</b><small>Озвучивать команды</small></button>
+  </div>
+</section>
+
+<section id="roomPanel" class="panel hidden">
+  <h2 id="roomTitle">Подключение</h2>
+  <p class="muted" id="roomHint" style="margin-top:7px">Введите код комнаты или создайте новую.</p>
+  <div id="createArea">
+    <button class="primary" id="createRoom" style="margin-top:15px">СОЗДАТЬ КОМНАТУ</button>
+  </div>
+  <div class="field">
+    <label for="roomInput">Код комнаты</label>
+    <input id="roomInput" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Например, A7K9P2QX">
+  </div>
+  <button class="secondary" id="joinRoom">ПОДКЛЮЧИТЬСЯ</button>
+  <button class="secondary hidden" id="backRole" style="margin-top:10px">НАЗАД</button>
+</section>
+
+<section id="controller" class="hidden">
+  <div class="panel">
+    <div class="topline"><h2>Пульт управления</h2><span class="pill" id="controllerRoom">КОМНАТА —</span></div>
+    <p class="muted" style="margin:8px 0 14px">Нажатие отправит голосовую команду на второй телефон.</p>
+    <div class="grid">
+      <button class="cmd green" data-command="right">↗️<br>НАПРАВО</button>
+      <button class="cmd green" data-command="left">↖️<br>НАЛЕВО</button>
+      <div class="field" style="grid-column:1/-1;margin:0">
+        <label for="speedInput">Ограничение скорости, км/ч</label>
+        <div class="actions"><input id="speedInput" type="number" min="1" max="250" inputmode="numeric" placeholder="Например, 60"><button class="cmd" id="speedSend">ОТПРАВИТЬ</button></div>
+      </div>
+      <div class="panel" style="grid-column:1/-1;padding:13px">
+        <b style="display:block;margin-bottom:10px">🚦 ВПЕРЕДИ СВЕТОФОР</b>
+        <div class="subgrid"><button class="g" data-command="green">🟢 Зелёный</button><button class="y" data-command="yellow">🟡 Жёлтый</button><button class="r" data-command="red">🔴 Красный</button></div>
+      </div>
+      <button class="cmd amber" data-command="bump">⚠️<br>ЛЕЖАЧИЙ ПОЛИЦЕЙСКИЙ</button>
+      <button class="cmd red" data-command="careful">❗<br>ВНИМАТЕЛЬНО СЛЕДИТЕ ЗА ДОРОГОЙ</button>
+      <button class="cmd wide" id="clearAlert" style="background:linear-gradient(135deg,#a8b5c5,#64758b);color:#101722">✕ ОЧИСТИТЬ ОПОВЕЩЕНИЕ</button>
+    </div>
+  </div>
+</section>
+
+<section id="receiver" class="hidden">
+  <div class="panel center">
+    <div class="topline"><h2>Голосовой приёмник</h2><span class="pill" id="receiverRoom">КОМНАТА —</span></div>
+    <div style="font-size:54px;margin:20px 0 8px">🔊</div>
+    <h1 id="receiverState">ОЖИДАНИЕ</h1>
+    <p class="muted" id="lastCommand" style="margin:10px 0 16px">Здесь появятся голосовые сообщения.</p>
+    <button class="primary" id="enableSound">ВКЛЮЧИТЬ ЗВУК</button>
+    <button class="secondary" id="testSound" style="margin-top:10px">ПРОВЕРИТЬ ГОЛОС</button>
+    <p class="muted" style="font-size:12px;margin-top:12px">Оставьте эту страницу открытой. Не блокируйте экран во время использования: браузер может приостанавливать звук в фоне.</p>
+  </div>
+  <div class="panel"><b>Последние сообщения</b><div class="log" id="receiverLog" style="margin-top:12px"><div class="muted">Пока сообщений нет.</div></div></div>
+</section>
+
+<section id="sessionTools" class="hidden">
+  <button class="secondary" id="fullscreenBtn">⛶ ПОЛНЫЙ ЭКРАН</button>
+  <button class="danger" id="leaveBtn" style="margin-top:9px">ОТКЛЮЧИТЬСЯ</button>
+</section>
+
+<footer>ROAD SIGNAL • Вспомогательные голосовые оповещения<br>Не взаимодействуйте с пультом во время управления автомобилем.</footer>
+</main>
+<div id="toast" class="toast hidden"></div>
+
+<!-- Firebase SDK. Для работы заполните firebaseConfig ниже и опубликуйте файл по HTTPS. -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+/* 1. Вставьте сюда конфигурацию своего проекта Firebase. */
+const firebaseConfig = {
+  apiKey: "AIzaSyCJ6rrA6sNkRaQfgyMENfNBsvxN5ChX2WM",
+  authDomain: "road-signal.firebaseapp.com",
+  databaseURL: "https://road-signal-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "road-signal",
+  appId: "1:172628163363:web:05e2ba3dc26171fd2eea96"
+};
+
+const $ = id => document.getElementById(id);
+const sections = ["choose","roomPanel","controller","receiver","sessionTools"];
+let app, auth, db, currentRole = "", currentRoom = "", unsubscribe = null, soundReady = false, wakeLock = null;
+const phrases = {
+  right:"Направо.", left:"Налево.",
+  green:"Впереди светофор. Зелёный сигнал.",
+  yellow:"Впереди светофор. Жёлтый сигнал.",
+  red:"Впереди светофор. Красный сигнал.",
+  bump:"Впереди лежачий полицейский.",
+  careful:"Внимательно следите за дорогой."
+};
+function show(id){sections.forEach(s=>$(s).classList.toggle("hidden",s!==id));}
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.remove("hidden");setTimeout(()=>t.classList.add("hidden"),3500);}
+function setStatus(s){$("connection").textContent=s;}
+function validConfig(){return !firebaseConfig.apiKey.startsWith("ВСТАВЬТЕ") && !firebaseConfig.projectId.startsWith("ВАШ");}
+async function connectFirebase(){
+  if(!validConfig()) throw new Error("Сначала настройте Firebase в коде файла.");
+  if(!app){app=initializeApp(firebaseConfig);auth=getAuth(app);db=getDatabase(app);}
+  if(!auth.currentUser) await signInAnonymously(auth);
+  setStatus("СЕРВИС ГОТОВ");
+}
+function makeCode(){const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<8;i++)s+=chars[Math.floor(Math.random()*chars.length)];return s;}
+function attachRoom(code){
+  currentRoom=code.toUpperCase();
+  $("controllerRoom").textContent="КОМНАТА "+currentRoom;
+  $("receiverRoom").textContent="КОМНАТА "+currentRoom;
+  if(unsubscribe)unsubscribe();
+  if(currentRole==="receiver"){
+    const eventsRef=ref(db,`rooms/${currentRoom}/events`);
+    const joinedAt=Date.now();
+    unsubscribe=onChildAdded(eventsRef,snap=>{
+      const data=snap.val();
+      if(!data || !Number.isFinite(data.clientTime)) return;
+      // Не воспроизводим сообщения, отправленные до подключения приёмника.
+      if(data.clientTime < joinedAt) return;
+      handleIncoming(data);
+    });
+  }
+  setStatus("ПОДКЛЮЧЕНО");
+  $("sessionTools").classList.remove("hidden");
+  show(currentRole);
+}
+async function sendCommand(key, customText=null){
+  if(!currentRoom || currentRole!=="controller")return;
+  const isClear = key === "clear";
+  const text = isClear ? "" : (customText || phrases[key]);
+  if(!isClear && !text)return;
+  try{
+    await push(ref(db,`rooms/${currentRoom}/events`),{action:isClear?"clear":"speak",text,clientTime:Date.now(),createdAt:serverTimestamp()});
+    toast(isClear ? "Команда очистки отправлена" : "Команда отправлена");
+  }catch(e){toast("Не удалось отправить. Проверьте интернет и настройки Firebase.");}
+}
+function handleIncoming(data){
+  if(data.action === "clear"){
+    $("alertOverlay").classList.add("hidden");
+    $("receiverState").textContent="ГОТОВ К РАБОТЕ";
+    $("lastCommand").textContent="Оповещение очищено с пульта.";
+    if("speechSynthesis" in window) speechSynthesis.cancel();
+    return;
+  }
+  const text=String(data.text||"").slice(0,100);
+  if(!text)return;
+  $("alertText").textContent=text;
+  $("alertOverlay").classList.remove("hidden");
+  $("receiverState").textContent="НОВОЕ СООБЩЕНИЕ";
+  $("lastCommand").textContent=text;
+  const log=$("receiverLog");const empty=log.querySelector(".muted");if(empty)empty.remove();
+  const item=document.createElement("div");item.className="logitem";item.textContent=text;log.prepend(item);
+  while(log.children.length>8)log.lastElementChild.remove();
+  if(soundReady)speak(text);
+}
+let russianVoice = null;
+function chooseRussianVoice(){
+  if(!("speechSynthesis" in window))return;
+  const voices=speechSynthesis.getVoices();
+  russianVoice=voices.find(v=>/^ru(-|_)/i.test(v.lang) && /google|microsoft|yandex/i.test(v.name))
+    || voices.find(v=>/^ru(-|_)/i.test(v.lang)) || null;
+}
+if("speechSynthesis" in window){
+  chooseRussianVoice();
+  speechSynthesis.onvoiceschanged=chooseRussianVoice;
+}
+function speak(text){
+  if(!("speechSynthesis" in window)){toast("Этот браузер не поддерживает синтез речи.");return;}
+  speechSynthesis.cancel();
+  const alert = new SpeechSynthesisUtterance("Внимание.");
+  const message = new SpeechSynthesisUtterance(text);
+  [alert,message].forEach((utter,index)=>{
+    utter.lang="ru-RU";
+    if(russianVoice)utter.voice=russianVoice;
+    utter.rate=index===0?0.86:0.9;
+    utter.pitch=0.92;
+    utter.volume=1;
+  });
+  speechSynthesis.speak(alert);
+  speechSynthesis.speak(message);
+}
+async function requestWakeLock(){try{if("wakeLock" in navigator)wakeLock=await navigator.wakeLock.request("screen");}catch(e){}}
+
+$("startBtn").onclick=async()=>{
+  try{
+    if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+      await document.documentElement.requestFullscreen();
+    }
+  }catch(e){}
+  try{
+    if(screen.orientation && screen.orientation.lock) await screen.orientation.lock("landscape");
+  }catch(e){}
+  $("introOverlay").classList.add("hidden");
+  document.body.classList.remove("intro-open");
+  show("choose");
+};
+document.body.classList.add("intro-open");
+$("clearAlert").onclick=()=>sendCommand("clear");
+$("controllerChoice").onclick=()=>{currentRole="controller";$("roomTitle").textContent="Комната пульта";$("roomHint").textContent="Создайте комнату и введите её код на телефоне-приёмнике."; $("createArea").classList.remove("hidden");$("backRole").classList.remove("hidden");show("roomPanel");};
+$("receiverChoice").onclick=()=>{currentRole="receiver";$("roomTitle").textContent="Подключение приёмника";$("roomHint").textContent="Введите код, который показан на телефоне-пульте.";$("createArea").classList.add("hidden");$("backRole").classList.remove("hidden");show("roomPanel");};
+$("backRole").onclick=()=>show("choose");
+$("createRoom").onclick=async()=>{
+  try{await connectFirebase();const code=makeCode();$("roomInput").value=code;attachRoom(code);toast("Комната создана. Введите этот код на втором телефоне.");}
+  catch(e){toast(e.message||"Ошибка подключения к Firebase.");}
+};
+$("joinRoom").onclick=async()=>{
+  const code=$("roomInput").value.trim().toUpperCase();
+  if(!/^[A-HJ-NP-Z2-9]{8}$/.test(code)){toast("Введите корректный код из 8 символов.");return;}
+  try{await connectFirebase();attachRoom(code);if(currentRole==="receiver")toast("Подключено. Нажмите «Включить звук».");}
+  catch(e){toast(e.message||"Не удалось подключиться.");}
+};
+document.querySelectorAll("[data-command]").forEach(btn=>btn.addEventListener("click",()=>sendCommand(btn.dataset.command)));
+$("speedSend").onclick=()=>{const n=Number($("speedInput").value);if(!Number.isInteger(n)||n<1||n>250){toast("Введите число от 1 до 250.");return;}sendCommand("speed",`Ограничение скорости ${n} километров в час.`);};
+$("enableSound").onclick=()=>{soundReady=true;speak("Голосовые оповещения включены.");$("receiverState").textContent="ГОТОВ К РАБОТЕ";requestWakeLock();toast("Звук включён. Оставьте страницу открытой.");};
+$("testSound").onclick=()=>{soundReady=true;speak("Проверка звука. ROAD SIGNAL готов.");requestWakeLock();};
+$("fullscreenBtn").onclick=async()=>{try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen();}catch(e){toast("Полный экран недоступен в этом браузере.");}};
+$("leaveBtn").onclick=()=>{if(unsubscribe)unsubscribe();unsubscribe=null;currentRoom="";currentRole="";setStatus("НЕ ПОДКЛЮЧЕНО");$("sessionTools").classList.add("hidden");$("roomInput").value="";show("choose");};
+function updateOrientationHint(){
+  const isSmallPortrait=window.matchMedia("(orientation: portrait) and (max-width: 800px)").matches;
+  $("rotateOverlay").classList.toggle("hidden",!isSmallPortrait || !$("introOverlay").classList.contains("hidden"));
+}
+window.addEventListener("resize",updateOrientationHint);
+window.addEventListener("orientationchange",updateOrientationHint);
+updateOrientationHint();
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&currentRoom)requestWakeLock();});
+</script>
+</body>
+</html>
